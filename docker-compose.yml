@@ -1,0 +1,50 @@
+services:
+  db:
+    # We use a mariadb image which supports both amd64 & arm64 architecture
+    image: mariadb:11-jammy
+    command: '--default-authentication-plugin=mysql_native_password'
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASS
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER=$MYSQL_USER
+      - MYSQL_PASSWORD=$MYSQL_PASS
+    expose:
+      - 3306
+      - 33060
+    networks:
+      - metrics_statstraffic
+      - wp
+  wordpress:
+    image: wordpress:php8.2
+    expose:
+      - 80
+    restart: always
+    environment:
+      - WORDPRESS_DB_HOST=db
+      - WORDPRESS_DB_USER=$MYSQL_USER
+      - WORDPRESS_DB_PASSWORD=$MYSQL_PASS
+      - WORDPRESS_DB_NAME=wordpress
+      - |
+        WORDPRESS_CONFIG_EXTRA=
+        define( 'WP_HOME', 'https://caaspay.com' );
+        define( 'WP_SITEURL', 'https://caaspay.com' );
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - caddy-config_webtraffic
+      - metrics_statstraffic
+      - wp
+
+volumes:
+  db_data:
+  wp_data:
+
+networks:
+  caddy-config_webtraffic:
+    external: true
+  metrics_statstraffic:
+    external: true
+  wp:
